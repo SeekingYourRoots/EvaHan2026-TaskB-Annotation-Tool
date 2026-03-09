@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据标注工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .nav-btn-left {
+            width: 80px;
+            height: 100vh;
+            background: rgba(0, 123, 255, 0.9);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .nav-btn-left:hover:not(:disabled) {
+            background: rgba(0, 86, 179, 0.95);
+        }
+        
+        .nav-btn-left:disabled {
+            background: rgba(204, 204, 204, 0.5);
+            cursor: not-allowed;
+        }
+        
+        .nav-btn-right {
+            width: 80px;
+            height: 100vh;
+            background: rgba(0, 123, 255, 0.9);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .nav-btn-right:hover:not(:disabled) {
+            background: rgba(0, 86, 179, 0.95);
+        }
+        
+        .nav-btn-right:disabled {
+            background: rgba(204, 204, 204, 0.5);
+            cursor: not-allowed;
+        }
+        .mode-btn {
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .mode-btn.active {
+            background: #007bff !important;
+            color: white !important;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #2c3e50;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+            position: relative;
+            padding: 20px;
+        }
+        
+        #imageCanvas {
+            display: block;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        #imageCanvas {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17"><line x1="8.5" y1="0" x2="8.5" y2="17" stroke="black" stroke-width="1"/><line x1="0" y1="8.5" x2="17" y2="8.5" stroke="black" stroke-width="1"/><circle cx="8.5" cy="8.5" r="1.5" fill="black"/></svg>') 8 8, crosshair;
+        }
+        
+        .sidebar {
+            width: 200px;
+            background: white;
+            border-left: 1px solid #ddd;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            gap: 15px;
+        }
+        
+        .sidebar h2 {
+            color: #333;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .label-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .label-btn {
+            flex: 1;
+            border: 4px solid;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            background: white;
+            font-size: 20px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .label-btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .label-btn.active {
+            opacity: 1;
+            box-shadow: 0 0 30px;
+            transform: scale(1.05);
+        }
+        
+        .label-btn.text {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+        .label-btn.text.active {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .label-btn.image {
+            border-color: #44ff44;
+            color: #44ff44;
+        }
+        .label-btn.image.active {
+            background: #44ff44;
+            color: white;
+        }
+        
+        .label-btn.seal {
+            border-color: #4444ff;
+            color: #4444ff;
+        }
+        .label-btn.seal.active {
+            background: #4444ff;
+            color: white;
+        }
+        
+        .label-btn.book_edge {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+        .label-btn.book_edge.active {
+            background: #ffaa00;
+            color: white;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+        }
+        
+        .image-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .image-name {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10;
+            max-width: 80%;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .shortcut-hint {
+            font-size: 10px;
+            color: #999;
+            text-align: center;
+            padding: 5px;
+            line-height: 1.4;
+        }
+        
+        .export-btn {
+            width: 100%;
+            padding: 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .export-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="nav-btn-left" id="prevBtn">
+            ◀<br>上一张<br>(A)
+        </button>
+        
+        <div class="canvas-container">
+            <div class="image-counter" id="imageCounter">0 / 0</div>
+            <div class="image-name" id="imageName">图片名称</div>
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <canvas id="imageCanvas"></canvas>
+                <div class="loading" id="loading">加载中...</div>
+            </div>
+        </div>
+        
+        <button class="nav-btn-right" id="nextBtn">
+            ▶<br>下一张<br>(D)
+        </button>
+        
+        <div class="sidebar">
+            <h2>🖱️ 绘制模式</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="mode-btn active" data-mode="drag" style="flex: 1; padding: 10px; border: 2px solid #007bff; border-radius: 5px; background: #007bff; color: white; cursor: pointer; font-weight: bold;">
+                    拖拽
+                </button>
+                <button class="mode-btn" data-mode="click" style="flex: 1; padding: 10px; border: 2px solid #007bff; border-radius: 5px; background: white; color: #007bff; cursor: pointer; font-weight: bold;">
+                    点击
+                </button>
+            </div>
+            <h2>📝 标注类型</h2>
+            <div class="label-buttons">
+                <button class="label-btn text" data-label="text">文本</button>
+                <button class="label-btn image" data-label="image">图像</button>
+                <button class="label-btn seal" data-label="seal">印章</button>
+                <button class="label-btn book_edge" data-label="book_edge">书边</button>
+            </div>
+            <div class="shortcut-hint">
+            A/D 切换图片<br>
+            滚轮 切换图片<br>
+            右键选中/删除<br>
+            空格 删除选中<br>
+            右键+点击类型 修改
+        </div>
+
+        <button class="export-btn" id="exportBtn">
+            💾 保存并导出
+        </button>
+        </div>
+    </div>
+
+    <script>
+        let drawMode = 'drag';
+        let firstClick = null; 
+        let currentImageIndex = 0;
+        let totalImages = 0;
+        let currentLabel = 'text';
+        let originalRegions = [];
+        let newRegions = [];
+        let isDrawing = false;
+        let startX, startY;
+        let canvas, ctx;
+        let img = new Image();
+        let currentImagePath = '';
+        let selectedRegionIndex = -1;
+        let isSaving = false; 
+        let selectedRegionType = null;
+        
+        const colors = {
+            'text': '#ff4444',
+            'image': '#44ff44',
+            'seal': '#4444ff',
+            'book_edge': '#ffaa00'
+        };
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            canvas = document.getElementById('imageCanvas');
+            ctx = canvas.getContext('2d');
+            
+            try {
+                const countRes = await fetch('/api/images/count');
+                const countData = await countRes.json();
+                totalImages = countData.count;
+                
+                await loadImage(0);
+                bindEvents();
+            } catch (error) {
+                console.error('初始化失败:', error);
+                document.getElementById('loading').textContent = '初始化失败，请刷新页面';
+            }
+        });
+        
+        function bindEvents() {
+            document.querySelectorAll('.label-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const newLabel = e.target.dataset.label;
+                    
+                    if (selectedRegionIndex >= 0 && selectedRegionType) {
+                        let actualIndex;
+                        if (selectedRegionType === 'original') {
+                            actualIndex = selectedRegionIndex;
+                        } else {
+                            actualIndex = originalRegions.length + selectedRegionIndex;
+                        }
+                        
+                        try {
+                            const res = await fetch(`/api/regions/${currentImageIndex}/${actualIndex}/label?label=${newLabel}`, {
+                                method: 'PUT'
+                            });
+                            
+                            if (!res.ok) {
+                                const error = await res.json();
+                                throw new Error(error.detail || '修改失败');
+                            }
+                            
+                            if (selectedRegionType === 'new') {
+                                newRegions[selectedRegionIndex].label = newLabel;
+                            } else {
+                                originalRegions[selectedRegionIndex].label = newLabel;
+                            }
+                            
+                            redrawCanvas();
+                            console.log(`标签修改成功: ${selectedRegionType} 区域 ${selectedRegionIndex} -> ${newLabel}`);
+                            
+                        } catch (error) {
+                            console.error('修改标签失败:', error);
+                            alert('修改标签失败: ' + error.message);
+                        }
+                    }
+                    
+                    document.querySelectorAll('.label-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentLabel = newLabel;
+                });
+            });
+            
+            document.querySelector('.label-btn.text').classList.add('active');
+            
+            document.getElementById('prevBtn').addEventListener('click', () => {
+                if (currentImageIndex > 0) {
+                    loadImage(currentImageIndex - 1);
+                }
+            });
+            
+            document.getElementById('nextBtn').addEventListener('click', () => {
+                if (currentImageIndex < totalImages - 1) {
+                    loadImage(currentImageIndex + 1);
+                }
+            });
+            
+            document.addEventListener('keydown', handleKeyPress);
+            
+            document.addEventListener('wheel', handleWheel, { passive: false });
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', endDrawing);
+            canvas.addEventListener('mouseleave', endDrawing);
+            canvas.addEventListener('mousedown', selectRegion);
+            
+            canvas.addEventListener('contextmenu', handleRightClick);
+            
+            document.getElementById('exportBtn').addEventListener('click', handleExport);
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    drawMode = e.target.dataset.mode;
+                    firstClick = null;
+                    redrawCanvas();
+                });
+            });
+        }
+        
+        function handleKeyPress(e) {
+            if (e.key === 'a' || e.key === 'A') {
+                if (currentImageIndex > 0) {
+                    loadImage(currentImageIndex - 1);
+                }
+            }
+            else if (e.key === 'd' || e.key === 'D') {
+                if (currentImageIndex < totalImages - 1) {
+                    loadImage(currentImageIndex + 1);
+                }
+            }
+            else if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                if (selectedRegionIndex >= 0 && selectedRegionIndex < newRegions.length) {
+                    deleteSelectedRegion();
+                }
+            }
+        }
+        
+        function handleWheel(e) {
+            e.preventDefault();
+            
+            if (e.deltaY < 0) {
+
+                if (currentImageIndex > 0) {
+                    loadImage(currentImageIndex - 1);
+                }
+            } else if (e.deltaY > 0) {
+
+                if (currentImageIndex < totalImages - 1) {
+                    loadImage(currentImageIndex + 1);
+                }
+            }
+        }
+        
+        function handleRightClick(e) {
+            e.preventDefault();
+        }
+        
+
+        async function loadImage(index) {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                selectedRegionIndex = -1;
+                selectedRegionType = null;
+                firstClick = null;
+                
+                const res = await fetch(`/api/images/${index}`);
+                const data = await res.json();
+                
+                currentImageIndex = index;
+                currentImagePath = data.image_path;
+                originalRegions = data.original_regions;
+                newRegions = data.new_regions;
+                
+                updateImageCounter();
+                
+                const imageName = data.image_path.split('/').pop(); 
+                document.getElementById('imageName').textContent = imageName;
+                
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    document.getElementById('loading').style.display = 'none';
+                    redrawCanvas();
+                };
+                
+                img.onerror = () => {
+                    document.getElementById('loading').textContent = '图片加载失败';
+                    console.error('图片加载失败:', img.src);
+                };
+                
+                img.src = `/${data.image_path}`;
+                console.log('加载图片:', img.src);
+                
+            } catch (error) {
+                console.error('加载图片失败:', error);
+                alert('加载图片失败: ' + error.message);
+                document.getElementById('loading').textContent = '加载失败';
+            }
+        }
+
+        function updateImageCounter() {
+            document.getElementById('imageCounter').textContent = 
+                `${currentImageIndex + 1} / ${totalImages}`;
+            
+            document.getElementById('prevBtn').disabled = currentImageIndex === 0;
+            document.getElementById('nextBtn').disabled = currentImageIndex === totalImages - 1;
+        }
+        
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            originalRegions.forEach((region, index) => {
+                const isSelected = selectedRegionType === 'original' && index === selectedRegionIndex;
+                drawRegion(region, true, isSelected);
+            });
+            
+            newRegions.forEach((region, index) => {
+                const isSelected = selectedRegionType === 'new' && index === selectedRegionIndex;
+                drawRegion(region, false, isSelected);
+            });
+        }
+        
+        function drawRegion(region, isOriginal, isSelected) {
+            if (!region.points || region.points.length < 2) return;
+            
+            const color = colors[region.label] || '#ffffff';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = isSelected ? 5 : (isOriginal ? 2 : 3);
+            ctx.setLineDash(isOriginal ? [8, 4] : []);
+            
+            if (isSelected) {
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 15;
+            }
+            
+            ctx.beginPath();
+            ctx.moveTo(region.points[0][0], region.points[0][1]);
+            region.points.forEach((point, i) => {
+                if (i > 0) ctx.lineTo(point[0], point[1]);
+            });
+            ctx.closePath();
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+        }
+
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+        
+        function selectRegion(e) {
+
+            if (e.button !== 2) return;
+            
+            e.preventDefault();
+            
+            const coords = getCanvasCoordinates(e);
+
+            if (selectedRegionIndex >= 0 && selectedRegionType) {
+                let clickedSameRegion = false;
+                
+                if (selectedRegionType === 'new') {
+                    const region = newRegions[selectedRegionIndex];
+                    if (isPointInRegion(coords.x, coords.y, region)) {
+                        clickedSameRegion = true;
+                        deleteSelectedRegion();
+                        return;
+                    }
+                } else if (selectedRegionType === 'original') {
+                    const region = originalRegions[selectedRegionIndex];
+                    if (isPointInRegion(coords.x, coords.y, region)) {
+                        clickedSameRegion = true;
+                        alert('原始标注不能删除，只能修改类型');
+                        return;
+                    }
+                }
+            }
+            
+            for (let i = newRegions.length - 1; i >= 0; i--) {
+                const region = newRegions[i];
+                if (isPointInRegion(coords.x, coords.y, region)) {
+                    selectedRegionIndex = i;
+                    selectedRegionType = 'new';
+                    redrawCanvas();
+                    return;
+                }
+            }
+
+            for (let i = originalRegions.length - 1; i >= 0; i--) {
+                const region = originalRegions[i];
+                if (isPointInRegion(coords.x, coords.y, region)) {
+                    selectedRegionIndex = i;
+                    selectedRegionType = 'original';
+                    redrawCanvas();
+                    return;
+                }
+            }
+
+            selectedRegionIndex = -1;
+            selectedRegionType = null;
+            redrawCanvas();
+        }
+
+        function isPointInRegion(x, y, region) {
+            if (!region.points || region.points.length < 3) return false;
+            
+            let inside = false;
+            const points = region.points;
+            
+            for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+                const xi = points[i][0], yi = points[i][1];
+                const xj = points[j][0], yj = points[j][1];
+                
+                const intersect = ((yi > y) !== (yj > y))
+                    && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            
+            return inside;
+        }
+
+        function deleteSelectedRegion() {
+            if (selectedRegionType !== 'new' || selectedRegionIndex < 0 || selectedRegionIndex >= newRegions.length) {
+                return;
+            }
+            
+            newRegions.splice(selectedRegionIndex, 1);
+            selectedRegionIndex = -1;
+            selectedRegionType = null;
+            
+            redrawCanvas();
+            saveAnnotation();
+        }
+        
+        function startDrawing(e) {
+            if (e.button === 2) return;
+            
+            const coords = getCanvasCoordinates(e);
+            
+            if (drawMode === 'click') {
+                if (!firstClick) {
+                    firstClick = { x: coords.x, y: coords.y };
+                    selectedRegionIndex = -1;
+                    selectedRegionType = null;
+                } else {
+                    const x1 = firstClick.x;
+                    const y1 = firstClick.y;
+                    const x2 = coords.x;
+                    const y2 = coords.y;
+                    
+                    if (Math.abs(x2 - x1) >= 5 && Math.abs(y2 - y1) >= 5) {
+                        const points = [
+                            [Math.round(Math.min(x1, x2)), Math.round(Math.min(y1, y2))],
+                            [Math.round(Math.max(x1, x2)), Math.round(Math.min(y1, y2))],
+                            [Math.round(Math.max(x1, x2)), Math.round(Math.max(y1, y2))],
+                            [Math.round(Math.min(x1, x2)), Math.round(Math.max(y1, y2))]
+                        ];
+                        
+                        const newRegion = {
+                            label: currentLabel,
+                            text: '',
+                            points: points
+                        };
+                        
+                        newRegions.push(newRegion);
+                        redrawCanvas();
+                        saveAnnotation();
+                    }
+                    
+                    firstClick = null;
+                }
+                redrawCanvas();
+            } else {
+                startX = coords.x;
+                startY = coords.y;
+                isDrawing = true;
+                selectedRegionIndex = -1;
+                selectedRegionType = null;
+            }
+        }
+
+        function draw(e) {
+            if (drawMode === 'click' && firstClick) {
+                const coords = getCanvasCoordinates(e);
+                redrawCanvas();
+                
+                ctx.strokeStyle = colors[currentLabel];
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(
+                    firstClick.x, 
+                    firstClick.y, 
+                    coords.x - firstClick.x, 
+                    coords.y - firstClick.y
+                );
+                ctx.setLineDash([]);
+                return;
+            }
+            
+            if (!isDrawing) return;
+            
+            const coords = getCanvasCoordinates(e);
+            
+            redrawCanvas();
+            
+            ctx.strokeStyle = colors[currentLabel];
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+            ctx.strokeRect(startX, startY, coords.x - startX, coords.y - startY);
+        }
+
+        function endDrawing(e) {
+            if (drawMode === 'click') {
+                return;
+            }
+            
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            const coords = getCanvasCoordinates(e);
+            const endX = coords.x;
+            const endY = coords.y;
+            
+            if (Math.abs(endX - startX) < 5 || Math.abs(endY - startY) < 5) {
+                redrawCanvas();
+                return;
+            }
+            
+            if (drawMode === 'click' && firstClick) {
+                const points = [
+                    [Math.round(firstClick.x), Math.round(firstClick.y)],
+                    [Math.round(endX), Math.round(firstClick.y)],
+                    [Math.round(endX), Math.round(endY)],
+                    [Math.round(firstClick.x), Math.round(endY)]
+                ];
+                
+                const newRegion = {
+                    label: currentLabel,
+                    text: '',
+                    points: points
+                };
+                
+                newRegions.push(newRegion);
+                
+                redrawCanvas();
+
+                saveAnnotation();
+                firstClick = null; 
+                return;
+            }
+            
+            const points = [
+                [Math.round(startX), Math.round(startY)],
+                [Math.round(endX), Math.round(startY)],
+                [Math.round(endX), Math.round(endY)],
+                [Math.round(startX), Math.round(endY)]
+            ];
+            
+            const newRegion = {
+                label: currentLabel,
+                text: '',
+                points: points
+            };
+            
+            newRegions.push(newRegion);
+            
+            redrawCanvas();
+            
+            saveAnnotation();
+        }
+        
+        async function saveAnnotation() {
+            if (isSaving) return;
+            
+            isSaving = true;
+            
+            try {
+                const res = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_index: currentImageIndex,
+                        new_regions: newRegions
+                    })
+                });
+                
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || '保存失败');
+                }
+                
+                console.log('保存成功');
+            } catch (error) {
+                console.error('保存失败:', error);
+            } finally {
+                isSaving = false;
+            }
+        }
+
+        async function handleExport() {
+            const filename = prompt('请输入导出文件名（不含.json后缀）：', '1');
+            
+            if (!filename || filename.trim() === '') {
+                alert('文件名不能为空');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: filename.trim() })
+                });
+                
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || '导出失败');
+                }
+                
+                const result = await res.json();
+                alert(result.message);
+                
+                await loadImage(0);
+                
+            } catch (error) {
+                console.error('导出失败:', error);
+                alert('导出失败: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
